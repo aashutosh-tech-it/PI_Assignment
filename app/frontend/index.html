@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Guestbook</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f9fafc;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 600px;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 30px;
+    }
+    label {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #34495e;
+    }
+    input {
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #3a7cff;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0055ff;
+    }
+    h2 {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+      color: #2c3e50;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f4f6f8;
+    }
+    .delete-btn {
+    background: none !important;
+    border: none !important;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin-top: 6px;
+    align-self: flex-end;
+    transition: fill 0.3s ease;
+    }
+    .delete-btn svg {
+    fill: #bdc3c7;   /* light grey default */
+    transition: fill 0.3s ease;
+    }
+    .delete-btn:hover svg {
+    fill: #e74c3c;   /* red on hover */
+    }
+    .entry-name {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-right: 5px;
+    }
+    .entry-time {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+
+<body>
+   <div class="container">
+    <h1>Guestbook</h1>
+    <form id="form">
+      <label for="name">Name:</label>
+      <input type="text" id="name">
+
+      <label for="msg">Message:</label>
+      <input type="text" id="msg">
+
+      <button type="submit">Add Entry</button>
+    </form>
+
+    <h2>Entries</h2>
+    <ul id="entries"></ul>
+  </div>
+
+<script>
+async function loadEntries() {
+    let res = await fetch("/api/list");
+    let data = await res.json();
+    let entries = document.getElementById("entries");
+    entries.innerHTML = "";
+    data.guestbook.forEach((e, i) => {
+        let li = document.createElement("li");
+
+        // Split "Name: Message (timestamp)"
+        let tsStart = e.lastIndexOf("(");
+        let timestamp = tsStart !== -1 ? e.substring(tsStart).replace("(", "").replace(")", "") : "";
+        let textPart = tsStart !== -1 ? e.substring(0, tsStart).trim() : e;
+
+        let nameSplit = textPart.split(":");
+        let name = nameSplit[0] || "";
+        let message = nameSplit.slice(1).join(":").trim();
+
+        // Name + Message on same line
+        let row = document.createElement("div");
+        let spanName = document.createElement("span");
+        spanName.className = "entry-name";
+        spanName.textContent = name + ":";
+
+        let spanMsg = document.createElement("span");
+        spanMsg.textContent = " " + message;
+
+        row.appendChild(spanName);
+        row.appendChild(spanMsg);
+
+        // Timestamp on new line
+        let spanTime = document.createElement("span");
+        spanTime.className = "entry-time";
+        spanTime.textContent = timestamp;
+
+        // Delete button
+        let btn = document.createElement("button");
+        btn.className = "delete-btn";
+        btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+            <path d="M9 3v-1h6v1h5v2h-16v-2h5zm-4 5h14l-1.5 13.5c-.1.9-.9 1.5-1.8 1.5h-7.4c-.9 0-1.7-.6-1.8-1.5l-1.5-13.5zm4 2v10h2v-10h-2zm4 0v10h2v-10h-2z"/>
+        </svg>
+        `;
+        btn.onclick = async () => {
+            await fetch(`/api/delete/${i}`, { method: "DELETE" });
+            loadEntries();
+        };
+
+        // Append all
+        li.appendChild(row);
+        if (timestamp) li.appendChild(spanTime);
+        li.appendChild(btn);
+        entries.appendChild(li);
+    });
+}
+
+document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let nameField = document.getElementById("name");
+    let msgField = document.getElementById("msg");
+
+    await fetch(`/api/add/${nameField.value}/${msgField.value}`, { method: "POST" });
+
+    // ✅ clear fields correctly
+    nameField.value = "";
+    msgField.value = "";
+
+    loadEntries();
+});
+loadEntries();
+</script>
+
+</body>
+</html>
