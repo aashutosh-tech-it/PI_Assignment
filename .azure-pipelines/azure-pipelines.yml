@@ -1,0 +1,103 @@
+trigger:
+  branches:
+    include:
+      - dev
+
+variables:
+- group: PI-DEV-VG
+
+stages:
+
+# -------------------------
+- stage: TerraformScan
+  displayName: "Terraform Scan"
+  jobs:
+  - job: Checkov
+    pool:
+      name: $(poolName)
+    steps:
+    - checkout: self
+    - script: |
+        pip install checkov
+        checkov -d terraform/ --quiet --soft-fail
+      displayName: "Run Checkov Scan"
+
+# -------------------------
+- stage: Build
+  displayName: "Build Images"
+  jobs:
+
+  - job: Backend
+    displayName: "Backend Build & Push"
+    pool:
+      name: $(poolName)
+    steps:
+    - checkout: self
+    - task: Docker@2
+      displayName: "Build & Push Backend"
+      inputs:
+        command: buildAndPush
+        repository: backend
+        dockerfile: app/backend/Dockerfile
+        containerRegistry: $(acrServiceConnection)
+        tags: |
+          $(Build.BuildId)
+
+  - job: Frontend
+    displayName: "Frontend Build & Push"
+    pool:
+      name: $(poolName)
+    steps:
+    - checkout: self
+    - task: Docker@2
+      displayName: "Build & Push Frontend"
+      inputs:
+        command: buildAndPush
+        repository: frontend
+        dockerfile: app/frontend/Dockerfile
+        containerRegistry: $(acrServiceConnection)
+        tags: |
+          $(Build.BuildId)
+
+# -------------------------
+- stage: Deploy
+  displayName: "Deploy to AKS"
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    displayName: "Helm Deploy Backend & Frontend"
+    pool:
+      name: $(poolName)
+    steps:
+    - checkout: self
+
+    # Install Helm
+    - task: HelmInstaller@1
+      displayName: "Install Helm 3"
+      inputs:
+        helmVersionToInstall: '3.8.0'
+
+    # Configure kubectl context for AKS
+    - task: AzureCLI@2
+      displayName: "Set AKS Context"
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials `
+            --resource-group $(rgName) `
+            --name $(aksName) `
+            --overwrite-existing
+
+    # Deploy Backend and Frontend with Helm
+    - powershell: |
+        helm upgrade guestbook ./helm/guestbook `
+          --install `
+          --namespace dev `
+          --create-namespace `
+          --set images.backend=$(acrName).azurecr.io/backend:$(Build.BuildId) `
+          --set images.frontend=$(acrName).azurecr.io/frontend:$(Build.BuildId) `
+          --set images.redis=redis:alpine `
+          -f helm/guestbook/values.yaml
+      displayName: "Helm Upgrade Guestbook (Backend + Frontend)"

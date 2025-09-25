@@ -1,0 +1,10 @@
+replicaCount: 1
+
+images:
+  backend: acrpidevopstfweu01.azurecr.io/guestbook-backend:v1
+  frontend: acrpidevopstfweu01.azurecr.io/guestbook-frontend:v1
+  redis: redis:alpine
+
+service:
+  type: LoadBalancer
+  port: 8080
