@@ -54,7 +54,7 @@ The solution provisions infrastructure with **Terraform**, ensures security comp
 
 * **Infrastructure as Code** with Terraform (secure, repeatable provisioning)
 * **Security scanning** integrated (Checkov + Trivy)
-* **Microservices architecture** (frontend + backend + database)
+* **Microservices architecture** (frontend + backend + database + ngrok)
 * **Helm-based deployment** for modular, environment-ready configs
 * **CI/CD automation** with Azure Pipelines
 * **Cluster & app monitoring** with Prometheus & Grafana
