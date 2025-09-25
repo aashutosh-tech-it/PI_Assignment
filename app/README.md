@@ -2,6 +2,8 @@
 
 This repository contains a simple microservice-based Guestbook application with a **FastAPI backend**, a **Redis datastore**, and a **Nginx-based frontend**.
 
+![alt text](image.png)
+
 ---
 
 ## Components

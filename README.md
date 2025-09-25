@@ -21,12 +21,15 @@ The solution provisions infrastructure with **Terraform**, ensures security comp
   * **Frontend** → Nginx serving HTML/JS, proxying requests
   * **Backend** → FastAPI (Python) exposing REST APIs
   * **Database** → Redis for guestbook storage
+  ![alt text](image-3.png)
 
-* **Deployment (Helm)**
+* **Deployment (On AKS via Helm)**
 
   * Kubernetes manifests templated via Helm chart
   * Separate Deployments & Services for frontend, backend, redis
   * Frontend exposed via `LoadBalancer`
+  ![alt text](image-4.png)
+  ![alt text](image-5.png)
 
 * **CI/CD (Azure Pipelines)**
 
@@ -34,11 +37,16 @@ The solution provisions infrastructure with **Terraform**, ensures security comp
   * **Build Stage** → Docker build, Trivy scan, push images to ACR
   * **Deploy Stage** → Helm upgrade/install to AKS
   * Rollout verification with `kubectl`
+  ![alt text](image.png)
+  ![alt text](image-1.png)
+  ![alt text](image-2.png)
 
 * **Monitoring (Prometheus + Grafana)**
 
   * Metrics: CPU, Memory, Latency, Error Rates
   * Daily dashboard exports for performance reporting
+  * Deployed on AKS using helm charts.
+  ![alt text](image-7.png)
 
 ---
 
